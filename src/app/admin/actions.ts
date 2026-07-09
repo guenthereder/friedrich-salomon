@@ -100,6 +100,7 @@ export async function moveNode(id: number, direction: "up" | "down"): Promise<vo
   db.prepare("UPDATE node SET position = ? WHERE id = ?").run(sib.position, id);
   db.prepare("UPDATE node SET position = ? WHERE id = ?").run(node.position, sib.id);
   revalidatePath("/admin");
+  revalidatePath("/", "layout");
 }
 
 export async function rotateOtpAction(): Promise<void> {

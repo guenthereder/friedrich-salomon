@@ -84,31 +84,31 @@ function NodeRow({
   return (
     <li>
       <div
-        className="flex items-center gap-2 py-1"
+        className="flex items-start gap-2 py-1"
         style={{ paddingLeft: `${depth * 1.25}rem` }}
       >
         {hasChildren ? (
-          <button onClick={() => toggle(node.id)} className="w-4 text-ink/40 hover:text-ink" aria-label="toggle">
+          <button onClick={() => toggle(node.id)} className="w-4 shrink-0 pt-1 text-ink/40 hover:text-ink" aria-label="toggle">
             {isOpen ? "▾" : "▸"}
           </button>
         ) : (
-          <span className="w-4" />
+          <span className="w-4 shrink-0" />
         )}
         {node.type === "image" && thumb ? (
           <img
             src={thumb}
             alt=""
-            className="h-5 w-5 shrink-0 rounded-sm object-cover"
+            className="h-[250px] w-[250px] shrink-0 rounded-sm object-cover"
             draggable={false}
           />
         ) : (
-          <span className="flex h-4 w-4 shrink-0 items-center justify-center text-[8px] text-ink/30">
+          <span className="flex h-[250px] w-[250px] shrink-0 items-center justify-center rounded-sm bg-ink/5 text-4xl text-ink/30">
             {node.type === "collection" ? "▣" : "▤"}
           </span>
         )}
         <Link
           href={`/admin/${node.id}`}
-          className="flex-1 truncate text-sm hover:underline"
+          className="flex-1 truncate pt-1 text-sm hover:underline"
         >
           <span className="mr-2 text-[10px] uppercase tracking-widest text-ink/40">
             {node.type === "collection" ? s.collection : s.image}
@@ -116,8 +116,7 @@ function NodeRow({
           #{node.id} · {node.slug}
           {node.hidden === 1 && <span className="ml-2 text-[10px] text-ink/40">({s.hidden})</span>}
         </Link>
-        <span className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100" />
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1 pt-1">
           <button
             disabled={pending}
             onClick={() => start(() => moveNode(node.id, "up"))}
