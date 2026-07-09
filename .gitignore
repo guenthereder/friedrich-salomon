@@ -1,2 +1,28 @@
 # ai
 .serena
+
+# dependencies
+node_modules
+
+# next
+.next
+out
+
+# build
+dist
+
+# env
+.env
+.env.local
+.env*.local
+
+# data
+data
+public/uploads
+
+# os
+.DS_Store
+
+# ts
+*.tsbuildinfo
+next-env.d.ts

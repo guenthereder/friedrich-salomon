@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  background-color: #f5f0e8;
+  color: #1a1612;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ─── Justified gallery ─── */
+.justified-row {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(12, 1fr);
+}
+
+/* ─── Download prevention ─── */
+
+.protected-image,
+img[data-protected] {
+  -webkit-user-drag: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+.image-shield {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: transparent;
+  cursor: default;
+  pointer-events: auto;
+}
+
+/* ─── Lightbox ─── */
+
+.lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  cursor: pointer;
+}
+
+.lightbox-image {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  cursor: default;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 2rem;
+  cursor: pointer;
+}
+
+.lightbox-text {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 30vh;
+  overflow-y: auto;
+  padding: 2rem;
+  color: rgba(255, 255, 255, 0.8);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+}
