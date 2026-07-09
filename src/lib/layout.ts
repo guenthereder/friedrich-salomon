@@ -65,9 +65,7 @@ export type ComputedLayout = {
   totalHeight: number;
 };
 
-// ─── BSP subdivision algorithm ───
-
-type Rect = { x: number; y: number; w: number; h: number };
+// ─── Masonry packing algorithm ───
 
 type QueueItem = {
   dims: ImageDimensions;
@@ -77,30 +75,30 @@ type QueueItem = {
   textBody?: string;
 };
 
+/** Column count scales with container width, matching the BREAKPOINTS below. */
+function columnsForContainerWidth(containerWidth: number): number {
+  if (containerWidth < 560) return 2;
+  if (containerWidth < 860) return 3;
+  if (containerWidth < 1200) return 4;
+  if (containerWidth < 1700) return 5;
+  if (containerWidth < 2200) return 6;
+  return 7;
+}
+
 /**
- * Recursive spatial subdivision (binary space partition).
+ * Masonry packing with occasional column spans.
  *
- * The canvas starts as one big rectangle. We take items one by one and
- * place them into the canvas, splitting the remaining space into two
- * sub-rectangles (like a guillotine cut). The split direction is chosen
- * to match the image's aspect ratio:
- *   - Landscape image → split horizontally (left/right), image takes the wider side
- *   - Portrait image → split vertically (top/bottom), image takes the taller side
- *
- * This creates an organic mosaic where landscapes are wide, portraits are
- * tall, and they interlock naturally. Text blocks adopt the aspect ratio
- * that fills the current gap best.
- *
- * Implementation uses a free-list of rectangles. Each placement carves
- * the image's rect out of the best-fitting free rect, then returns the
- * leftover L-shaped region as two new free rects.
+ * The canvas is split into fixed-width columns. Each item is placed into
+ * whichever column (or pair of adjacent columns) is currently shortest,
+ * then sized from its *real* aspect ratio at that width — so a portrait
+ * image, kept to a single column, renders tall, while a distinctly
+ * landscape image spans two columns and renders wide. Because every item
+ * is placed by tracking column heights directly, placements can never
+ * overlap (unlike a free-rect guillotine packer, which can drift out of
+ * sync once items grow taller than the row that "claimed" the space below
+ * them).
  */
-export function computeBspLayout(
-  items: LayoutItem[],
-  containerWidth: number,
-  targetHeight = 320,
-  gap = 12,
-): ComputedLayout {
+export function computeBspLayout(items: LayoutItem[], containerWidth: number, gap = 12): ComputedLayout {
   // Build the placement queue — assign aspect ratios to text blocks.
   const queue: QueueItem[] = [];
 
@@ -144,97 +142,35 @@ export function computeBspLayout(
     return { items: [], containerWidth, totalHeight: 0 };
   }
 
-  // ─── Row-based guillotine packing ───
-  //
-  // Instead of a generic free-rect packer (which tends to stack vertically),
-  // we process items in order, grouping them into rows. Each row fills the
-  // full container width. Within a row, images are sized so their heights
-  // are approximately equal (justified rows), but unlike standard justified
-  // rows, we allow images to have slightly different heights by subdividing
-  // the row vertically when there's a height mismatch.
-  //
-  // The result: landscapes are wide and short, portraits are narrow and tall,
-  // and they interlock across rows because a tall portrait from row N may
-  // overlap into row N+1's space.
-
-  const canvasHeight = Math.ceil(queue.length * targetHeight * 1.5) + targetHeight * 4;
-  let freeRects: Rect[] = [{ x: 0, y: 0, w: containerWidth, h: canvasHeight }];
+  const columns = columnsForContainerWidth(containerWidth);
+  const colWidth = (containerWidth - gap * (columns - 1)) / columns;
+  const colHeights = new Array(columns).fill(0) as number[];
   const placed: PlacedItem[] = [];
 
   for (const qi of queue) {
-    const targetAspect = qi.dims.aspect;
+    const aspect = qi.dims.aspect;
+    // Distinctly landscape images/text cards span two columns so they read
+    // as genuinely wider tiles; portraits and near-square images stay
+    // single-column, which — at a fixed column width — renders them taller.
+    const span = Math.min(aspect >= 1.35 && columns >= 2 ? 2 : 1, columns);
 
-    // Natural size at target height.
-    const naturalHeight = targetHeight;
-    const naturalWidth = Math.round(naturalHeight * targetAspect);
-
-    // ── Find the best free rect ──
-    // Score each rect by: how well the image fills it (higher = better),
-    // with a secondary preference for top-left position.
-    // This prevents a narrow image from always picking the full-width rect.
-
-    let bestRect: Rect | null = null;
-    let bestScore = Infinity;
-
-    for (const r of freeRects) {
-      if (r.w < 80 || r.h < 80) continue;
-
-      // Compute the image's display size inside this rect.
-      let dw = Math.min(naturalWidth, r.w);
-      let dh = Math.round(dw / targetAspect);
-      if (dh > r.h) {
-        dh = r.h;
-        dw = Math.round(dh * targetAspect);
-      }
-      if (dw < 80 || dh < 80) continue;
-
-      // Fill ratio: how much of the rect the image uses.
-      const fillRatio = (dw * dh) / (r.w * r.h);
-
-      // Position penalty: prefer top-left (lower y, then lower x).
-      // Scaled so that a 10% fill improvement is worth ~100px of position.
-      const posPenalty = r.y * 0.3 + r.x * 0.1;
-
-      // Score: lower is better. Penalise low fill heavily.
-      const score = (1 - fillRatio) * 500 + posPenalty;
-
-      if (score < bestScore) {
-        bestScore = score;
-        bestRect = r;
+    // Find the span-wide slot with the lowest starting height (classic
+    // masonry balancing), preferring the leftmost tie.
+    let bestStart = 0;
+    let bestMaxHeight = Infinity;
+    for (let start = 0; start <= columns - span; start++) {
+      let maxHeight = 0;
+      for (let c = start; c < start + span; c++) maxHeight = Math.max(maxHeight, colHeights[c]);
+      if (maxHeight < bestMaxHeight) {
+        bestMaxHeight = maxHeight;
+        bestStart = start;
       }
     }
 
-    if (!bestRect) continue;
-
-    // Determine placement size.
-    let placeW = naturalWidth;
-    let placeH = naturalHeight;
-
-    // Scale down if needed.
-    if (placeW > bestRect.w) {
-      placeW = bestRect.w;
-      placeH = Math.round(placeW / targetAspect);
-    }
-    if (placeH > bestRect.h) {
-      placeH = bestRect.h;
-      placeW = Math.round(placeH * targetAspect);
-    }
-
-    // If the rect is roughly the image's natural width, fill it fully.
-    if (bestRect.w <= naturalWidth * 1.4) {
-      placeW = bestRect.w;
-      placeH = Math.round(placeW / targetAspect);
-      if (placeH > bestRect.h) {
-        placeH = bestRect.h;
-        placeW = Math.round(placeH * targetAspect);
-      }
-    }
-
-    placeW = Math.max(80, Math.round(placeW));
-    placeH = Math.max(80, Math.round(placeH));
-
-    const px = bestRect.x;
-    const py = bestRect.y;
+    const width = colWidth * span + gap * (span - 1);
+    const height = Math.round(width / aspect);
+    const x = bestStart * (colWidth + gap);
+    const y = bestMaxHeight;
 
     placed.push({
       nodeId: qi.item.nodeId,
@@ -246,95 +182,19 @@ export function computeBspLayout(
       isText: qi.isText,
       textTitle: qi.textTitle,
       textBody: qi.textBody,
-      x: px,
-      y: py,
-      width: placeW - gap,
-      height: placeH - gap,
+      x: Math.round(x),
+      y: Math.round(y),
+      width: Math.round(width),
+      height,
     });
 
-    // Guillotine split: remove bestRect from free list, add the two leftovers.
-    freeRects = freeRects.filter((r) => r !== bestRect);
-
-    // Right remainder
-    const rightW = bestRect.w - placeW;
-    if (rightW >= 60) {
-      freeRects.push({ x: px + placeW, y: py, w: rightW, h: placeH });
-    }
-
-    // Bottom remainder (full width of the original rect)
-    const bottomH = bestRect.h - placeH;
-    if (bottomH >= 60) {
-      freeRects.push({ x: px, y: py + placeH, w: bestRect.w, h: bottomH });
-    }
-
-    // Also add the area to the right of the bottom strip (if right was cut).
-    if (rightW >= 60 && bottomH >= 60) {
-      freeRects.push({ x: px + placeW, y: py + placeH, w: rightW, h: bottomH });
-    }
-
-    // Merge adjacent free rects to reduce fragmentation.
-    freeRects = mergeRects(freeRects);
+    const newHeight = y + height + gap;
+    for (let c = bestStart; c < bestStart + span; c++) colHeights[c] = newHeight;
   }
 
-  // Trim canvas to the lowest placed item.
-  const maxY = placed.reduce((m, p) => Math.max(m, p.y + p.height + gap), 0);
+  const totalHeight = Math.max(0, Math.max(...colHeights) - gap);
 
-  return {
-    items: placed,
-    containerWidth,
-    totalHeight: maxY,
-  };
-}
-
-/** Merge free rects that share an edge to reduce fragmentation. */
-function mergeRects(rects: Rect[]): Rect[] {
-  let changed = true;
-  let result = [...rects];
-
-  while (changed) {
-    changed = false;
-    const merged: Rect[] = [];
-
-    for (let i = 0; i < result.length; i++) {
-      const r = result[i];
-      let absorbed = false;
-
-      for (let j = 0; j < merged.length; j++) {
-        const m = merged[j];        // Horizontal merge: same y, same h, adjacent x
-        if (r.y === m.y && r.h === m.h && r.x === m.x + m.w) {
-          merged[j] = { x: m.x, y: m.y, w: m.w + r.w, h: m.h };
-          absorbed = true;
-          changed = true;
-          break;
-        }
-        if (r.y === m.y && r.h === m.h && r.x + r.w === m.x) {
-          merged[j] = { x: r.x, y: r.y, w: m.w + r.w, h: m.h };
-          absorbed = true;
-          changed = true;
-          break;
-        }
-        // Vertical merge: same x, same w, adjacent y
-        if (r.x === m.x && r.w === m.w && r.y === m.y + m.h) {
-          merged[j] = { x: m.x, y: m.y, w: m.w, h: m.h + r.h };
-          absorbed = true;
-          changed = true;
-          break;
-        }
-        if (r.x === m.x && r.w === m.w && r.y + r.h === m.y) {
-          merged[j] = { x: r.x, y: r.y, w: m.w, h: m.h + r.h };
-          absorbed = true;
-          changed = true;
-          break;
-        }
-      }
-
-      if (!absorbed) merged.push(r);
-    }
-
-    result = merged;
-  }
-
-  return result;
+  return { items: placed, containerWidth, totalHeight };
 }
 
 // ─── Multi-breakpoint computation ───

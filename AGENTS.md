@@ -44,7 +44,7 @@ Always run `npm run typecheck` and `npm run lint` after changes. Both must pass 
 - Locale stored in `fs_locale` cookie. Switched via `/api/locale/[locale]` redirect.
 
 ### Gallery layout
-- BSP guillotine packing algorithm in `src/lib/layout.ts`. NOT justified rows (those force same-height rows). The algorithm places images at their natural aspect ratio, splits remaining space into free rects, and picks the rect each image fills best (fill-ratio scoring).
+- Masonry packing algorithm (`computeBspLayout` in `src/lib/layout.ts`, name kept for history). NOT justified rows (those force same-height rows). Items are placed into fixed-width columns at whichever column(s) are currently shortest, sized from their natural aspect ratio — portraits stay single-column (renders tall), distinctly landscape items span two columns (renders wide). Column count scales with container width.
 - Pre-computed at 6 breakpoints (480–2560px). Client `ResizeObserver` picks the active layout.
 - `JustifiedGallery` is a client component (uses `ResizeObserver`, `GalleryImage`). `CollectionView` is server (builds layout items, calls `computeResponsiveLayout`).
 
