@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import {
   createCollection,
-  createImageNode,
+  createImageNodes,
   deleteNodeAction,
   moveNode,
 } from "@/app/admin/actions";
@@ -12,11 +12,11 @@ import type { Locale } from "@/lib/i18n-dict";
 import type { TreeNode } from "@/lib/tree";
 
 const DICT: Record<Locale, {
-  newCol: string; newImg: string; delete: string; confirmDelete: string;
+  newCol: string; newImg: string; uploading: string; delete: string; confirmDelete: string;
   moveUp: string; moveDown: string; collection: string; image: string; hidden: string;
 }> = {
-  de: { newCol: "Neue Sammlung", newImg: "Neues Bild", delete: "Löschen", confirmDelete: "Wirklich löschen?", moveUp: "↑", moveDown: "↓", collection: "Sammlung", image: "Bild", hidden: "verborgen" },
-  en: { newCol: "New collection", newImg: "New image", delete: "Delete", confirmDelete: "Really delete?", moveUp: "↑", moveDown: "↓", collection: "Collection", image: "Image", hidden: "hidden" },
+  de: { newCol: "Neue Sammlung", newImg: "Neue Bilder", uploading: "Lädt hoch…", delete: "Löschen", confirmDelete: "Wirklich löschen?", moveUp: "↑", moveDown: "↓", collection: "Sammlung", image: "Bild", hidden: "verborgen" },
+  en: { newCol: "New collection", newImg: "New images", uploading: "Uploading…", delete: "Delete", confirmDelete: "Really delete?", moveUp: "↑", moveDown: "↓", collection: "Collection", image: "Image", hidden: "hidden" },
 };
 
 export function TreeView({
@@ -211,16 +211,17 @@ function UploadChild({ parentId, locale }: { parentId: number; locale: Locale })
   const [pending, start] = useTransition();
   return (
     <label className="cursor-pointer text-xs text-ink/60 hover:text-ink">
-      {s.newImg}
+      {pending ? s.uploading : s.newImg}
       <input
         type="file"
         accept="image/*"
+        multiple
         className="hidden"
         disabled={pending}
         onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          start(() => createImageNode(parentId, file));
+          const files = Array.from(e.target.files ?? []);
+          if (files.length === 0) return;
+          start(() => createImageNodes(parentId, files));
           e.target.value = "";
         }}
       />

@@ -47,8 +47,6 @@ export default async function AdminDashboard() {
             rotate: t("admin.otp.rotate"),
             revoke: t("admin.otp.revoke"),
             copyLink: t("admin.otp.copyLink"),
-            set: t("admin.otp.set"),
-            apply: t("admin.otp.apply"),
             envNotice: t("admin.otp.envNotice"),
             none: "—",
           }}

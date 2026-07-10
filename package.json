@@ -6,11 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "import:usb": "tsx scripts/import-usb.ts",
-    "migrate": "tsx scripts/migrate.ts",
-    "seed:admin": "tsx scripts/seed-admin.ts"
+    "import:usb": "tsx --env-file-if-exists=.env scripts/import-usb.ts",
+    "migrate": "tsx --env-file-if-exists=.env scripts/migrate.ts",
+    "seed:admin": "tsx --env-file-if-exists=.env scripts/seed-admin.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -25,7 +25,7 @@
     "sharp": "^0.33.5"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
+    "@eslint/js": "^9.18.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.10.7",

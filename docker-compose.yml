@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - db-data:/app/data
+      - uploads-data:/app/public/uploads
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  uploads-data:

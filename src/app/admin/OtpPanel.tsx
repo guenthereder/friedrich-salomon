@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { rotateOtpAction, revokeOtpAction, setOtpAction } from "@/app/admin/actions";
+import { rotateOtpAction, revokeOtpAction } from "@/app/admin/actions";
 
 type Labels = {
   title: string;
@@ -9,8 +9,6 @@ type Labels = {
   rotate: string;
   revoke: string;
   copyLink: string;
-  set: string;
-  apply: string;
   envNotice: string;
   none: string;
 };
@@ -30,8 +28,6 @@ export function OtpPanel({
 }) {
   const [pending, start] = useTransition();
   const [copied, setCopied] = useState(false);
-  const [custom, setCustom] = useState("");
-  const [showSet, setShowSet] = useState(false);
 
   const link = code ? `${typeof window !== "undefined" ? window.location.origin : ""}/login` : "";
   const expired = expiresAt ? new Date(expiresAt.replace(" ", "T") + "Z").getTime() < Date.now() : false;
@@ -100,43 +96,6 @@ export function OtpPanel({
             </button>
           )}
         </>
-      )}
-
-      {!showSet ? (
-        <button
-          disabled={pending}
-          onClick={() => setShowSet(true)}
-          className="mt-4 block text-xs text-ink/50 underline hover:text-ink"
-        >
-          {labels.set}
-        </button>
-      ) : (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const v = custom.trim();
-            if (!v) return;
-            start(async () => {
-              await setOtpAction(v);
-              setCustom("");
-              setShowSet(false);
-            });
-          }}
-          className="mt-4 flex items-center gap-2"
-        >
-          <input
-            value={custom}
-            onChange={(e) => setCustom(e.target.value)}
-            placeholder={labels.set}
-            className="flex-1 rounded border border-ink/15 bg-white/50 px-2 py-1 text-xs font-mono focus:border-gold focus:outline-none"
-          />
-          <button
-            disabled={pending || !custom.trim()}
-            className="rounded bg-ink px-3 py-1 text-xs uppercase tracking-widest text-parchment hover:bg-ink/90 disabled:opacity-40"
-          >
-            {labels.apply}
-          </button>
-        </form>
       )}
     </div>
   );

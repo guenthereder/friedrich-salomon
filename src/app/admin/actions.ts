@@ -13,7 +13,7 @@ import {
   updateNode,
 } from "@/lib/nodes";
 import { saveImage } from "@/lib/images";
-import { rotateOtp, revokeOtp, setOtpCode } from "@/lib/otp";
+import { rotateOtp, revokeOtp } from "@/lib/otp";
 import { DEFAULT_LAYOUT, type Layout, type Locale } from "@/lib/constants";
 import { getLocale } from "@/lib/i18n";
 
@@ -28,18 +28,21 @@ export async function createCollection(parentId: number | null, title: string): 
   revalidatePath("/", "layout");
 }
 
-export async function createImageNode(parentId: number | null, file: File, title?: string): Promise<void> {
+export async function createImageNodes(parentId: number | null, files: File[]): Promise<void> {
   const locale = await getLocale();
-  if (!file.type.startsWith("image/")) throw new Error("not an image");
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const base = slugify(title || file.name.replace(/\.[^.]+$/, "")) || "bild";
-  const ext = "." + (file.name.split(".").pop()?.toLowerCase() ?? "jpg");
-  const stamp = Date.now().toString(36);
-  const relName = `${base}-${stamp}${ext}`;
-  const sourcePath = await saveImage(buffer, relName);
-  const slug = uniqueSlug(parentId, base);
-  const node = createNode({ parent_id: parentId, type: "image", slug, source_path: sourcePath });
-  setTranslation(node.id, locale, title ?? file.name, "");
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    if (!file.type.startsWith("image/")) continue;
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const base = slugify(file.name.replace(/\.[^.]+$/, "")) || "bild";
+    const ext = "." + (file.name.split(".").pop()?.toLowerCase() ?? "jpg");
+    const stamp = `${Date.now().toString(36)}-${i}`;
+    const relName = `${base}-${stamp}${ext}`;
+    const sourcePath = await saveImage(buffer, relName);
+    const slug = uniqueSlug(parentId, base);
+    const node = createNode({ parent_id: parentId, type: "image", slug, source_path: sourcePath });
+    setTranslation(node.id, locale, file.name, "");
+  }
   revalidatePath("/admin");
   revalidatePath("/", "layout");
 }
@@ -105,13 +108,6 @@ export async function moveNode(id: number, direction: "up" | "down"): Promise<vo
 
 export async function rotateOtpAction(): Promise<void> {
   rotateOtp();
-  revalidatePath("/admin");
-}
-
-export async function setOtpAction(code: string): Promise<void> {
-  const trimmed = code.trim();
-  if (!trimmed) throw new Error("empty code");
-  setOtpCode(trimmed);
   revalidatePath("/admin");
 }
 

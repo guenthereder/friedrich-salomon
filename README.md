@@ -94,9 +94,9 @@ Client-side deterrent layer (not foolproof — screenshots still work):
 
 ## Admin dashboard (`/admin`)
 
-- **Tree editor**: recursive tree view with expand/collapse, reorder (↑/↓), delete, create collection, upload image. Thumbnails shown for image nodes.
+- **Tree editor**: recursive tree view with expand/collapse, reorder (↑/↓), delete, create collection, upload images (multi-select). Thumbnails shown for image nodes.
 - **Node editor** (`/admin/[nodeId]`): locale tabs (de/en), title + markdown body, layout selector, cover image picker, hidden toggle, slug edit.
-- **OTP panel**: show current code, set custom code, rotate to random, revoke, copy login link.
+- **OTP panel**: show current code, rotate to random, revoke, copy login link.
 
 ## Scripts
 
@@ -123,14 +123,43 @@ Client-side deterrent layer (not foolproof — screenshots still work):
 
 ## Deployment
 
+### Docker (recommended)
+
+```bash
+cp .env.example .env
+# Edit .env: set JWT_SECRET, ADMIN_USERNAME, OTP_CODE
+
+docker compose up -d --build
+docker compose exec app npm run seed:admin -- <your-password>
+```
+
+The DB (`data/`) and uploads (`public/uploads/`) persist in named Docker
+volumes (`db-data`, `uploads-data`), independent of the container's
+lifecycle. The database auto-migrates on first use — no separate migrate
+step needed.
+
+Other one-off admin scripts run the same way, e.g.:
+
+```bash
+docker compose exec app npm run seed:admin -- --force <new-password>
+docker compose exec app npm run import:usb
+```
+
+To rebuild after pulling new code: `docker compose up -d --build`.
+
+### Bare Node host
+
 Any Node host with a persistent volume for `data/` and `public/uploads/`:
 
 ```bash
-npm ci --omit=dev
-npm run migrate
+npm ci
 npm run build
 npm run start
 ```
+
+(`npm run migrate` is optional — the DB auto-migrates on first use. Admin
+scripts like `seed:admin` need the `devDependencies` installed since they
+run via `tsx`, so don't use `--omit=dev`.)
 
 Set all env vars in `.env`. Ensure `JWT_SECRET` is a strong random string (32+ chars).
 
