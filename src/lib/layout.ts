@@ -77,6 +77,7 @@ type QueueItem = {
 
 /** Column count scales with container width, matching the BREAKPOINTS below. */
 function columnsForContainerWidth(containerWidth: number): number {
+  if (containerWidth < 400) return 1;
   if (containerWidth < 560) return 2;
   if (containerWidth < 860) return 3;
   if (containerWidth < 1200) return 4;
@@ -199,7 +200,7 @@ export function computeBspLayout(items: LayoutItem[], containerWidth: number, ga
 
 // ─── Multi-breakpoint computation ───
 
-export const BREAKPOINTS = [480, 768, 1024, 1440, 1920, 2560] as const;
+export const BREAKPOINTS = [320, 480, 768, 1024, 1440, 1920, 2560] as const;
 export type Breakpoint = (typeof BREAKPOINTS)[number];
 
 export type ResponsiveLayout = {
