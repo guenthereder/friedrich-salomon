@@ -51,7 +51,9 @@ export function JustifiedGallery({
             style={{
               display: visible ? "block" : "none",
               position: "relative",
-              width: "100%",
+              width: `${computed.containerWidth}px`,
+              maxWidth: "100%",
+              margin: "0 auto",
               height: `${computed.totalHeight}px`,
             }}
           >
