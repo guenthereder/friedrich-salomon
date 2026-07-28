@@ -16,6 +16,7 @@ export function JustifiedGallery({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [activeBp, setActiveBp] = useState<number | null>(null);
+  const [containerW, setContainerW] = useState(0);
 
   useLayoutEffect(() => {
     const el = ref.current;
@@ -28,6 +29,7 @@ export function JustifiedGallery({
         if (w >= bp) best = bp;
       }
       setActiveBp(best);
+      setContainerW(w);
     };
     update();
     const ro = new ResizeObserver(update);
@@ -45,20 +47,19 @@ export function JustifiedGallery({
         const computed = layout.layouts[bp];
         if (!computed || computed.items.length === 0) return null;
         const visible = activeBp === bp || (activeBp === null && bp === layout.breakpoints[0]);
+        const scale = containerW > 0 ? containerW / computed.containerWidth : 1;
         return (
           <div
             key={bp}
             style={{
               display: visible ? "block" : "none",
               position: "relative",
-              width: `${computed.containerWidth}px`,
-              maxWidth: "100%",
-              margin: "0 auto",
-              height: `${computed.totalHeight}px`,
+              width: "100%",
+              height: `${Math.round(computed.totalHeight * scale)}px`,
             }}
           >
             {computed.items.map((item, i) => (
-              <PlacedCell key={item.nodeId + (item.isText ? "-t" : "") + i} item={item} />
+              <PlacedCell key={item.nodeId + (item.isText ? "-t" : "") + i} item={item} scale={scale} />
             ))}
           </div>
         );
@@ -67,13 +68,13 @@ export function JustifiedGallery({
   );
 }
 
-function PlacedCell({ item }: { item: PlacedItem }) {
+function PlacedCell({ item, scale }: { item: PlacedItem; scale: number }) {
   const style = {
     position: "absolute" as const,
-    left: `${item.x}px`,
-    top: `${item.y}px`,
-    width: `${item.width}px`,
-    height: `${item.height}px`,
+    left: `${Math.round(item.x * scale)}px`,
+    top: `${Math.round(item.y * scale)}px`,
+    width: `${Math.round(item.width * scale)}px`,
+    height: `${Math.round(item.height * scale)}px`,
   };
 
   // Text block
