@@ -10,8 +10,8 @@ export function getDb(): DatabaseType {
   if (db) return db;
   mkdirSync(DATA_DIR, { recursive: true });
   const conn = new Database(DB_PATH);
-  conn.pragma("journal_mode = WAL");
-  conn.pragma("foreign_keys = ON");
+  conn.exec("PRAGMA journal_mode = WAL");
+  conn.exec("PRAGMA foreign_keys = ON");
   db = conn;
   // Ensure schema exists on first connection so the app self-initializes
   // without needing a manual `npm run migrate` step.
