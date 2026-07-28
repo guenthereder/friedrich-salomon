@@ -1,5 +1,6 @@
 services:
   app:
+    image: ghcr.io/guenthereder/friedrich-salomon:latest
     build: .
     ports:
       - "3000:3000"
@@ -8,6 +9,15 @@ services:
     volumes:
       - db-data:/app/data
       - uploads-data:/app/public/uploads
+    restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  watchtower:
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 3600 --label-enable
     restart: unless-stopped
 
 volumes:
