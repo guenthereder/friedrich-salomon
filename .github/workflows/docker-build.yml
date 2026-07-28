@@ -22,7 +22,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Bump version and push tag
         run: |
@@ -38,6 +38,8 @@ jobs:
           echo "full=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "minor=$(echo "${VERSION}" | cut -d. -f1,2)" >> "$GITHUB_OUTPUT"
           echo "major=$(echo "${VERSION}" | cut -d. -f1)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-qemu-action@v3
 
       - uses: docker/setup-buildx-action@v3
 
@@ -60,6 +62,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
